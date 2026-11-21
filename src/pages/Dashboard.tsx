@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { apiRequest, DEMO_MODE } from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
 import MobileSidebar from '@/components/MobileSidebar';
 import LinkCard from '@/components/LinkCard';
@@ -70,13 +70,12 @@ const Dashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [categoriesRes, linksRes] = await Promise.all([
-        supabase.from('categories').select('*').order('created_at', { ascending: true }),
-        supabase.from('links').select('*').order('created_at', { ascending: false }),
+      const [categoriesData, linksData] = await Promise.all([
+        apiRequest<Category[]>('/categories'),
+        apiRequest<Link[]>('/links'),
       ]);
-
-      if (categoriesRes.data) setCategories(categoriesRes.data);
-      if (linksRes.data) setLinks(linksRes.data);
+      setCategories(categoriesData);
+      setLinks(linksData);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Ma\'lumotlarni yuklashda xatolik');
@@ -119,22 +118,14 @@ const Dashboard = () => {
 
     try {
       if (data.id) {
-        const { error } = await supabase
-          .from('links')
-          .update({ title: data.title, url: data.url, category_id: data.category_id })
-          .eq('id', data.id);
-
-        if (error) throw error;
+        await apiRequest('/links/update', { method: 'PUT', body: JSON.stringify({ id: data.id, title: data.title, url: data.url, category_id: data.category_id }) });
         toast.success('Link yangilandi!');
       } else {
-        const { error } = await supabase.from('links').insert({
+        await apiRequest('/links', { method: 'POST', body: JSON.stringify({
           title: data.title,
           url: data.url,
           category_id: data.category_id,
-          user_id: user.id,
-        });
-
-        if (error) throw error;
+        }) });
         toast.success('Link qo\'shildi!');
       }
 
@@ -150,8 +141,7 @@ const Dashboard = () => {
     if (!deletingLink) return;
 
     try {
-      const { error } = await supabase.from('links').delete().eq('id', deletingLink);
-      if (error) throw error;
+      await apiRequest('/links/delete', { method: 'POST', body: JSON.stringify({ id: deletingLink }) });
       toast.success('Link o\'chirildi!');
       fetchData();
     } catch (error) {
@@ -166,12 +156,7 @@ const Dashboard = () => {
     if (!user) return;
 
     try {
-      const { error } = await supabase.from('categories').insert({
-        name,
-        user_id: user.id,
-      });
-
-      if (error) throw error;
+      await apiRequest('/categories', { method: 'POST', body: JSON.stringify({ name }) });
       toast.success('Kategoriya qo\'shildi!');
       fetchData();
     } catch (error) {
@@ -184,8 +169,7 @@ const Dashboard = () => {
     if (!deletingCategory) return;
 
     try {
-      const { error } = await supabase.from('categories').delete().eq('id', deletingCategory);
-      if (error) throw error;
+      await apiRequest('/categories/delete', { method: 'POST', body: JSON.stringify({ id: deletingCategory }) });
       toast.success('Kategoriya o\'chirildi!');
       if (selectedCategory === deletingCategory) {
         setSelectedCategory(null);
@@ -239,6 +223,7 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="flex-1 min-h-screen">
+        {DEMO_MODE && <div className="px-4 lg:px-8 pt-3 text-xs text-muted-foreground">Demo rejim: ma'lumotlar shu brauzerda saqlanadi</div>}
         {/* Header */}
         <header className="sticky top-0 z-10 glass border-b border-border px-4 lg:px-8 py-4">
           <div className="flex items-center gap-4">
