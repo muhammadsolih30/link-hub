@@ -90,12 +90,13 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   if (path === '/auth/recovery-request' && method === 'POST') {
     const email = String(body.email || '').trim().toLowerCase();
     const user = read<DemoUser>(KEYS.users).find((row) => row.email === email);
-    if (user) {
-      const requests = read<Array<{ id: string; email: string; full_name: string; phone: string; status: string; created_at: string }>>(KEYS.recoveryRequests);
-      requests.unshift({ id: randomId(), email, full_name: String(body.full_name || '').trim(), phone: String(body.phone || '').trim(), status: 'pending', created_at: new Date().toISOString(), admin_seen_at: null });
-      write(KEYS.recoveryRequests, requests);
-    }
-    return { ok: true, message: 'Agar akkaunt topilsa, yordam so\'rovi adminga yuborildi.' } as T;
+    const digits = (value: string) => value.replace(/\D/g, '');
+    if (!user || digits(user.phone) !== digits(String(body.phone || ''))) throw new Error('Siz kiritgan email yoki telefon raqami xato. Iltimos, tekshirib qaytadan so‘rov yuboring.');
+    const requests = read<Array<{ id: string; email: string; full_name: string; phone: string; status: string; created_at: string }>>(KEYS.recoveryRequests);
+    if (requests.filter((request) => request.email === email && Date.now() - new Date(request.created_at).getTime() < 60 * 60_000).length >= 3) throw new Error('Bir soatda 3 ta so‘rov yuborish mumkin. Keyinroq qayta urinib ko‘ring.');
+    requests.unshift({ id: randomId(), email, full_name: String(body.full_name || '').trim(), phone: String(body.phone || '').trim(), status: 'pending', created_at: new Date().toISOString(), admin_seen_at: null });
+    write(KEYS.recoveryRequests, requests);
+    return { ok: true, message: 'Yordam so‘rovi adminga yuborildi.' } as T;
   }
   if (path === '/auth/recovery-status' && method === 'POST') {
     const email = String(body.email || '').trim().toLowerCase();

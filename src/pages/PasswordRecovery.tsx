@@ -43,12 +43,19 @@ const PasswordRecovery = () => {
   }, [code, codeVerified, email, phone]);
 
   const sendHelpRequest = async (event: FormEvent) => {
-    event.preventDefault(); setError(''); setLoading(true);
+    event.preventDefault(); setError(''); setRequestSent(false); setLoading(true);
     try {
       await apiRequest('/auth/recovery-request', { method: 'POST', body: JSON.stringify({ email, full_name: fullName, phone }) });
       setRequestSent(true);
       toast.success('Yordam so‘rovi yuborildi.');
-    } catch (err) { setError(err instanceof Error ? err.message : 'So‘rovni yuborib bo‘lmadi.'); }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'So‘rovni yuborib bo‘lmadi.';
+      if (message.toLocaleLowerCase().includes('email yoki telefon')) {
+        toast.error('Siz xato ma’lumot yubordingiz. Email yoki telefon raqamni tekshirib, qaytadan urinib ko‘ring.');
+      } else {
+        toast.error(message);
+      }
+    }
     finally { setLoading(false); }
   };
 
@@ -85,9 +92,9 @@ const PasswordRecovery = () => {
         <form onSubmit={sendHelpRequest} className="space-y-3 rounded-xl border border-border p-4">
           <div className="flex items-center gap-2"><HelpCircle className="h-4 w-4 text-primary" /><h2 className="font-semibold">Yordam so‘rash</h2></div>
           <p className="text-xs text-muted-foreground">Akkauntda ro‘yxatdan o‘tgan email, ism-familiya va telefon raqamini kiriting.</p>
-          <Input type="email" autoComplete="email" placeholder="Akkaunt emaili" value={email} onChange={(event) => { setEmail(event.target.value); setCode(''); setCodeReady(false); setCodeVerified(false); }} required />
+          <Input type="email" autoComplete="email" placeholder="Akkaunt emaili" value={email} onChange={(event) => { setEmail(event.target.value); setRequestSent(false); setCode(''); setCodeReady(false); setCodeVerified(false); }} required />
           <Input autoComplete="name" placeholder="Ro‘yxatdan o‘tgan ism-familiya" value={fullName} onChange={(event) => setFullName(event.target.value)} required />
-          <Input type="tel" autoComplete="tel" placeholder="Ro‘yxatdan o‘tgan telefon" value={phone} onChange={(event) => { setPhone(event.target.value); setCode(''); setCodeReady(false); setCodeVerified(false); }} required />
+          <Input type="tel" autoComplete="tel" placeholder="Ro‘yxatdan o‘tgan telefon" value={phone} onChange={(event) => { setPhone(event.target.value); setRequestSent(false); setCode(''); setCodeReady(false); setCodeVerified(false); }} required />
           <Button type="submit" variant="outline" className="w-full" disabled={loading}>{loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Yuborilmoqda...</> : requestSent ? 'So‘rovni qayta yuborish' : 'Yordam so‘rovini yuborish'}</Button>
           {requestSent && <p className="text-sm text-primary">So‘rov yuborildi. Admin tasdiqlagan kod shu sahifaga avtomatik keladi.</p>}
         </form>

@@ -171,12 +171,13 @@ app.post('/api/auth/recovery-request', async (req, res, next) => {
   const phone = String(req.body?.phone || '').trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || fullName.length < 2 || fullName.length > 100 || !/^\+?[0-9()\s-]{7,20}$/.test(phone)) return res.status(400).json({ error: 'Email, ism va telefon raqamni to\'g\'ri kiriting.' });
   try {
-    const [user] = await sql.query('SELECT id FROM app_users WHERE email = $1', [email]);
-    if (user) {
-      const [recent] = await sql.query("SELECT COUNT(*)::int AS count FROM password_recovery_requests WHERE email = $1 AND created_at > now() - interval '1 hour'", [email]);
-      if (recent.count < 3) await sql.query('INSERT INTO password_recovery_requests (email, full_name, phone) VALUES ($1, $2, $3)', [email, fullName, phone]);
-    }
-    return res.json({ ok: true, message: 'Agar akkaunt topilsa, yordam so\'rovi adminga yuborildi.' });
+    const [user] = await sql.query('SELECT id, phone FROM app_users WHERE email = $1', [email]);
+    const digits = (value) => String(value || '').replace(/\D/g, '');
+    if (!user || digits(user.phone) !== digits(phone)) return res.status(400).json({ error: 'Siz kiritgan email yoki telefon raqami xato. Iltimos, tekshirib qaytadan so‘rov yuboring.' });
+    const [recent] = await sql.query("SELECT COUNT(*)::int AS count FROM password_recovery_requests WHERE email = $1 AND created_at > now() - interval '1 hour'", [email]);
+    if (recent.count >= 3) return res.status(429).json({ error: 'Bir soatda 3 ta so‘rov yuborish mumkin. Keyinroq qayta urinib ko‘ring.' });
+    await sql.query('INSERT INTO password_recovery_requests (email, full_name, phone) VALUES ($1, $2, $3)', [email, fullName, phone]);
+    return res.json({ ok: true, message: 'Yordam so‘rovi adminga yuborildi.' });
   } catch (error) { next(error); }
 });
 app.post('/api/auth/recover-with-code', async (req, res, next) => {
