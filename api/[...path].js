@@ -47,9 +47,13 @@ const handlers = {
 };
 
 export default function handler(req, res) {
-  const route = Array.isArray(req.query?.path)
+  const routeParam = Array.isArray(req.query?.path)
     ? req.query.path.join('/')
-    : String(req.query?.path || '').replace(/^\/+|\/+$/g, '');
+    : String(req.query?.path || '');
+  const requestUrl = new URL(req.url || '/', `https://${req.headers.host || 'localhost'}`);
+  const matchedPath = String(req.headers['x-matched-path'] || '');
+  const urlPath = matchedPath.startsWith('/api/') ? matchedPath : requestUrl.pathname;
+  const route = (routeParam || urlPath.replace(/^\/api\/?/, '')).replace(/^\/+|\/+$/g, '');
   const apiHandler = handlers[route];
   if (!apiHandler) return res.status(404).json({ error: 'API manzili topilmadi.' });
   return apiHandler(req, res);
