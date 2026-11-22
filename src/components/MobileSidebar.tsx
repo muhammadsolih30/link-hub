@@ -1,4 +1,4 @@
-import { Link2, Layers, Plus, Trash2, LogOut, User, X, Menu } from 'lucide-react';
+import { Link2, Layers, Plus, Trash2, LogOut, User, Menu, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -17,6 +17,7 @@ interface MobileSidebarProps {
   onDeleteCategory: (id: string) => void;
   userEmail?: string;
   onSignOut: () => void;
+  onChangePassword: () => void;
   linkCounts: Record<string, number>;
   totalLinks: number;
 }
@@ -29,6 +30,7 @@ const MobileSidebar = ({
   onDeleteCategory,
   userEmail,
   onSignOut,
+  onChangePassword,
   linkCounts,
   totalLinks,
 }: MobileSidebarProps) => {
@@ -141,6 +143,14 @@ const MobileSidebar = ({
           >
             <LogOut className="w-4 h-4" />
             Chiqish
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-2 mt-1"
+            onClick={() => { setOpen(false); onChangePassword(); }}
+          >
+            <KeyRound className="w-4 h-4" />
+            Parolni yangilash
           </Button>
         </div>
       </SheetContent>

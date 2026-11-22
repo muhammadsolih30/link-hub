@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Link2, Zap, Shield, Layers, ArrowRight, Loader2 } from 'lucide-react';
 
 const Index = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, authError } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -16,8 +16,18 @@ const Index = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background">
         <Loader2 className="w-10 h-10 text-primary animate-spin" />
+        <p className="text-sm text-muted-foreground">Hisob ma'lumotlari tekshirilmoqda...</p>
+      </div>
+    );
+  }
+
+  if (authError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background p-4 text-center">
+        <p className="max-w-md text-destructive">{authError}</p>
+        <Button variant="hero" onClick={() => navigate('/auth')}>Kirish sahifasiga o‘tish</Button>
       </div>
     );
   }

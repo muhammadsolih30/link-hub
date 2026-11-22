@@ -1,4 +1,4 @@
-import { Link2, Layers, Plus, Trash2, LogOut, User } from 'lucide-react';
+import { Link2, Layers, Plus, Trash2, LogOut, User, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
@@ -21,6 +21,7 @@ interface SidebarProps {
   onDeleteCategory: (id: string) => void;
   userEmail?: string;
   onSignOut: () => void;
+  onChangePassword: () => void;
   linkCounts: Record<string, number>;
   totalLinks: number;
 }
@@ -33,6 +34,7 @@ const Sidebar = ({
   onDeleteCategory,
   userEmail,
   onSignOut,
+  onChangePassword,
   linkCounts,
   totalLinks,
 }: SidebarProps) => {
@@ -126,6 +128,10 @@ const Sidebar = ({
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 glass border-border">
+            <DropdownMenuItem onClick={onChangePassword} className="cursor-pointer">
+              <KeyRound className="w-4 h-4 mr-2" />
+              Parolni yangilash
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={onSignOut} className="cursor-pointer text-destructive focus:text-destructive">
               <LogOut className="w-4 h-4 mr-2" />
               Chiqish

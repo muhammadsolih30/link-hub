@@ -7,9 +7,10 @@ import MobileSidebar from '@/components/MobileSidebar';
 import LinkCard from '@/components/LinkCard';
 import AddLinkDialog from '@/components/AddLinkDialog';
 import AddCategoryDialog from '@/components/AddCategoryDialog';
+import ChangePasswordDialog from '@/components/ChangePasswordDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Link2, Loader2 } from 'lucide-react';
+import { Plus, Search, Link2, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -48,9 +49,11 @@ const Dashboard = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   const [showAddLink, setShowAddLink] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const [editingLink, setEditingLink] = useState<Link | null>(null);
   const [deletingLink, setDeletingLink] = useState<string | null>(null);
   const [deletingCategory, setDeletingCategory] = useState<string | null>(null);
@@ -69,6 +72,7 @@ const Dashboard = () => {
 
   const fetchData = async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const [categoriesData, linksData] = await Promise.all([
         apiRequest<Category[]>('/categories'),
@@ -78,7 +82,9 @@ const Dashboard = () => {
       setLinks(linksData);
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast.error('Ma\'lumotlarni yuklashda xatolik');
+      const message = error instanceof Error ? error.message : 'Ma\'lumotlarni yuklashda xatolik';
+      setLoadError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -129,11 +135,12 @@ const Dashboard = () => {
         toast.success('Link qo\'shildi!');
       }
 
-      fetchData();
+      await fetchData();
       setEditingLink(null);
     } catch (error) {
       console.error('Error saving link:', error);
-      toast.error('Xatolik yuz berdi');
+      toast.error(error instanceof Error ? error.message : 'Xatolik yuz berdi');
+      throw error;
     }
   };
 
@@ -143,10 +150,10 @@ const Dashboard = () => {
     try {
       await apiRequest('/links/delete', { method: 'POST', body: JSON.stringify({ id: deletingLink }) });
       toast.success('Link o\'chirildi!');
-      fetchData();
+      await fetchData();
     } catch (error) {
       console.error('Error deleting link:', error);
-      toast.error('Xatolik yuz berdi');
+      toast.error(error instanceof Error ? error.message : 'Xatolik yuz berdi');
     } finally {
       setDeletingLink(null);
     }
@@ -158,10 +165,11 @@ const Dashboard = () => {
     try {
       await apiRequest('/categories', { method: 'POST', body: JSON.stringify({ name }) });
       toast.success('Kategoriya qo\'shildi!');
-      fetchData();
+      await fetchData();
     } catch (error) {
       console.error('Error saving category:', error);
-      toast.error('Xatolik yuz berdi');
+      toast.error(error instanceof Error ? error.message : 'Xatolik yuz berdi');
+      throw error;
     }
   };
 
@@ -174,10 +182,10 @@ const Dashboard = () => {
       if (selectedCategory === deletingCategory) {
         setSelectedCategory(null);
       }
-      fetchData();
+      await fetchData();
     } catch (error) {
       console.error('Error deleting category:', error);
-      toast.error('Xatolik yuz berdi');
+      toast.error(error instanceof Error ? error.message : 'Xatolik yuz berdi');
     } finally {
       setDeletingCategory(null);
     }
@@ -204,6 +212,20 @@ const Dashboard = () => {
     );
   }
 
+  if (loadError) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-background p-4">
+        <section className="glass w-full max-w-md rounded-2xl p-6 text-center">
+          <AlertCircle className="mx-auto mb-3 h-8 w-8 text-destructive" />
+          <p className="text-sm text-destructive">{loadError}</p>
+          <Button className="mt-5" onClick={() => void fetchData()}>
+            <RefreshCw className="mr-2 h-4 w-4" />Qayta urinish
+          </Button>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex">
       {/* Desktop Sidebar */}
@@ -216,6 +238,7 @@ const Dashboard = () => {
           onDeleteCategory={(id) => setDeletingCategory(id)}
           userEmail={user?.email}
           onSignOut={handleSignOut}
+          onChangePassword={() => setShowChangePassword(true)}
           linkCounts={linkCounts}
           totalLinks={links.length}
         />
@@ -235,6 +258,7 @@ const Dashboard = () => {
               onDeleteCategory={(id) => setDeletingCategory(id)}
               userEmail={user?.email}
               onSignOut={handleSignOut}
+              onChangePassword={() => setShowChangePassword(true)}
               linkCounts={linkCounts}
               totalLinks={links.length}
             />
@@ -325,6 +349,8 @@ const Dashboard = () => {
         onClose={() => setShowAddCategory(false)}
         onSave={handleSaveCategory}
       />
+
+      <ChangePasswordDialog open={showChangePassword} onClose={() => setShowChangePassword(false)} />
 
       {/* Delete Link Confirmation */}
       <AlertDialog open={!!deletingLink} onOpenChange={() => setDeletingLink(null)}>

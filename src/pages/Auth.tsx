@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,7 +25,7 @@ const Auth = () => {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, user, authError } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -117,10 +117,10 @@ const Auth = () => {
               Ro'yxatdan o'tish
             </button>
           </div>
-          {error && (
+          {(error || authError) && (
             <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span className="text-sm">{error}</span>
+              <span className="text-sm">{error || authError}</span>
             </div>
           )}
 
@@ -161,6 +161,9 @@ const Auth = () => {
                 required
               />
             </div>
+            {isLogin && <div className="text-right">
+              <Link to="/password-recovery" className="text-sm text-primary hover:underline">Parol esimdan chiqdi</Link>
+            </div>}
           </div>
 
           <Button type="submit" variant="hero" className="w-full" size="lg" disabled={loading}>

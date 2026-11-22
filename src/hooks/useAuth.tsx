@@ -1,10 +1,11 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { apiRequest, saveToken } from '@/lib/api';
+import { apiRequest, REQUEST_TIMEOUT_MESSAGE, saveToken } from '@/lib/api';
 
 export interface AppUser { id: string; email: string }
 interface AuthContextType {
   user: AppUser | null;
   loading: boolean;
+  authError: string;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string, phone: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -16,11 +17,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState('');
 
   useEffect(() => {
     apiRequest<{ user: AppUser }>('/auth/me')
       .then(({ user: currentUser }) => setUser(currentUser))
-      .catch(() => { saveToken(null); setUser(null); })
+      .catch((error) => {
+        saveToken(null);
+        setUser(null);
+        if (error instanceof Error && error.message === REQUEST_TIMEOUT_MESSAGE) setAuthError(error.message);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -51,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
   const signOut = async () => { saveToken(null); setUser(null); };
 
-  return <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, loading, authError, signIn, signUp, signOut }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
