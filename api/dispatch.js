@@ -46,15 +46,16 @@ const handlers = {
   'admin/recovery-code': adminRecoveryCode,
 };
 
+function normalizeRoute(value) {
+  return (Array.isArray(value) ? value.join('/') : String(value || '')).replace(/^\/+|\/+$/g, '');
+}
+
 export default function handler(req, res) {
-  const routeParam = Array.isArray(req.query?.path)
-    ? req.query.path.join('/')
-    : String(req.query?.path || '');
   const requestUrl = new URL(req.url || '/', `https://${req.headers.host || 'localhost'}`);
   const matchedPath = String(req.headers['x-matched-path'] || '');
-  const urlPath = matchedPath.startsWith('/api/') ? matchedPath : requestUrl.pathname;
-  const route = (routeParam || urlPath.replace(/^\/api\/?/, '')).replace(/^\/+|\/+$/g, '');
+  const path = matchedPath.startsWith('/api/') ? matchedPath : requestUrl.pathname;
+  const route = normalizeRoute(req.query?.route || req.query?.path || path.replace(/^\/api\/?/, ''));
   const apiHandler = handlers[route];
-  if (!apiHandler) return res.status(404).json({ error: 'API manzili topilmadi.' });
+  if (!apiHandler) return res.status(404).json({ error: 'API manzili topilmadi.', route });
   return apiHandler(req, res);
 }
