@@ -1,4 +1,4 @@
-import { runApi, publicUser } from '../../server/vercelApi.js';
+import { runApi, publicUser } from '../../vercelApi.js';
 
 export default (req, res) => runApi(req, res, async ({ getUser }) => {
   const user = await getUser(req);

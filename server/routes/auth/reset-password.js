@@ -1,4 +1,4 @@
-import { hashPassword, hashResetToken, runApi } from '../../server/vercelApi.js';
+import { hashPassword, hashResetToken, runApi } from '../../vercelApi.js';
 
 export default (req, res) => runApi(req, res, async ({ db, body }) => {
   if (req.method !== 'POST') return { status: 405, body: { error: 'Bu HTTP usuli qo\'llanmaydi.' } };

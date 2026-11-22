@@ -1,4 +1,4 @@
-import { isAdminRequest, runApi } from '../../server/vercelApi.js';
+import { isAdminRequest, runApi } from '../../vercelApi.js';
 
 export default (req, res) => runApi(req, res, async ({ db }) => {
   if (!isAdminRequest(req)) return { status: 401, body: { error: 'Admin kaliti noto\'g\'ri yoki sozlanmagan.' } };

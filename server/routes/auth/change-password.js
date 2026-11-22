@@ -1,4 +1,4 @@
-import { comparePassword, hashPassword, makeToken, runApi } from '../../server/vercelApi.js';
+import { comparePassword, hashPassword, makeToken, runApi } from '../../vercelApi.js';
 
 export default (req, res) => runApi(req, res, async ({ req: request, db, body, getUser }) => {
   if (request.method !== 'POST') return { status: 405, body: { error: 'Bu HTTP usuli qo\'llanmaydi.' } };

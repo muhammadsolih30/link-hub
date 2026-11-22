@@ -1,4 +1,4 @@
-import { encryptRecoveryCode, isAdminRequest, makeRecoveryCode, hashResetToken, runApi } from '../../server/vercelApi.js';
+import { encryptRecoveryCode, isAdminRequest, makeRecoveryCode, hashResetToken, runApi } from '../../vercelApi.js';
 
 export default (req, res) => runApi(req, res, async ({ req: request, db, body }) => {
   if (!isAdminRequest(request)) return { status: 401, body: { error: 'Admin kaliti noto\'g\'ri yoki sozlanmagan.' } };

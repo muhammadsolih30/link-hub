@@ -1,4 +1,4 @@
-import { runApi, comparePassword, makeToken, publicUser } from '../../server/vercelApi.js';
+import { runApi, comparePassword, makeToken, publicUser } from '../../vercelApi.js';
 
 export default (req, res) => runApi(req, res, async ({ db, body }) => {
   const email = String(body.email || '').trim().toLowerCase();

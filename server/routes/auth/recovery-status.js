@@ -1,4 +1,4 @@
-import { decryptRecoveryCode, validEmail, validPhone, runApi } from '../../server/vercelApi.js';
+import { decryptRecoveryCode, validEmail, validPhone, runApi } from '../../vercelApi.js';
 
 export default (req, res) => runApi(req, res, async ({ req: request, db, body }) => {
   if (request.method !== 'POST') return { status: 405, body: { error: 'Bu HTTP usuli qo\'llanmaydi.' } };
