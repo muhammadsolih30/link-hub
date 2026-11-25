@@ -94,9 +94,15 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     if (!user || digits(user.phone) !== digits(String(body.phone || ''))) throw new Error('Siz kiritgan email yoki telefon raqami xato. Iltimos, tekshirib qaytadan so‘rov yuboring.');
     const requests = read<Array<{ id: string; email: string; full_name: string; phone: string; status: string; created_at: string }>>(KEYS.recoveryRequests);
     if (requests.filter((request) => request.email === email && Date.now() - new Date(request.created_at).getTime() < 60 * 60_000).length >= 3) throw new Error('Bir soatda 3 ta so‘rov yuborish mumkin. Keyinroq qayta urinib ko‘ring.');
-    requests.unshift({ id: randomId(), email, full_name: String(body.full_name || '').trim(), phone: String(body.phone || '').trim(), status: 'pending', created_at: new Date().toISOString(), admin_seen_at: null });
+    const requestId = randomId();
+    const code = Array.from(crypto.getRandomValues(new Uint8Array(6)), (byte) => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
+    requests.unshift({ id: requestId, email, full_name: String(body.full_name || '').trim(), phone: String(body.phone || '').trim(), status: 'code_issued', created_at: new Date().toISOString(), admin_seen_at: new Date().toISOString() });
     write(KEYS.recoveryRequests, requests);
-    return { ok: true, message: 'Yordam so‘rovi adminga yuborildi.' } as T;
+    const codes = read<Array<{ code: string; email: string; request_id: string; expires_at: string; used: boolean }>>(KEYS.recoveryCodes);
+    codes.forEach((entry) => { if (entry.email === email && !entry.used) entry.used = true; });
+    codes.push({ code, email, request_id: requestId, expires_at: new Date(Date.now() + 30 * 60_000).toISOString(), used: false });
+    write(KEYS.recoveryCodes, codes);
+    return { ok: true, message: 'Email va telefon tasdiqlandi. Kod shu sahifaga avtomatik yuboriladi.' } as T;
   }
   if (path === '/auth/recovery-status' && method === 'POST') {
     const email = String(body.email || '').trim().toLowerCase();

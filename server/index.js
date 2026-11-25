@@ -176,8 +176,14 @@ app.post('/api/auth/recovery-request', async (req, res, next) => {
     if (!user || digits(user.phone) !== digits(phone)) return res.status(400).json({ error: 'Siz kiritgan email yoki telefon raqami xato. Iltimos, tekshirib qaytadan so‘rov yuboring.' });
     const [recent] = await sql.query("SELECT COUNT(*)::int AS count FROM password_recovery_requests WHERE email = $1 AND created_at > now() - interval '1 hour'", [email]);
     if (recent.count >= 3) return res.status(429).json({ error: 'Bir soatda 3 ta so‘rov yuborish mumkin. Keyinroq qayta urinib ko‘ring.' });
-    await sql.query('INSERT INTO password_recovery_requests (email, full_name, phone) VALUES ($1, $2, $3)', [email, fullName, phone]);
-    return res.json({ ok: true, message: 'Yordam so‘rovi adminga yuborildi.' });
+    await sql.query('UPDATE password_recovery_codes SET used_at = now(), code_ciphertext = NULL WHERE user_id = $1 AND used_at IS NULL', [user.id]);
+    const [recoveryRequest] = await sql.query(`INSERT INTO password_recovery_requests
+      (email, full_name, phone, status, admin_seen_at) VALUES ($1, $2, $3, 'code_issued', now()) RETURNING id`, [email, fullName, phone]);
+    const code = randomBytes(6).toString('hex').toUpperCase();
+    const codeHash = createHash('sha256').update(code).digest('hex');
+    await sql.query(`INSERT INTO password_recovery_codes (user_id, request_id, code_hash, code_ciphertext, expires_at)
+      VALUES ($1, $2, $3, $4, now() + interval '30 minutes')`, [user.id, recoveryRequest.id, codeHash, encryptRecoveryCode(code)]);
+    return res.json({ ok: true, message: 'Email va telefon tasdiqlandi. Kod shu sahifaga avtomatik yuboriladi.' });
   } catch (error) { next(error); }
 });
 app.post('/api/auth/recover-with-code', async (req, res, next) => {
